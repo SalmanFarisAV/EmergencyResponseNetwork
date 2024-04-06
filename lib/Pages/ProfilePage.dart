@@ -120,7 +120,7 @@ class _ProfilePageState extends State<ProfilePage> {
         await user.updateProfile(photoURL: url);
         print("Image uploaded successfully."); // Debug print statement
       } catch (e) {
-        print("Error uploading image: $e"); // Debug print statement
+        print("Error uploading image: $e"); 
       }
     }
   }
