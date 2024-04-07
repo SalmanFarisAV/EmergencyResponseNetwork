@@ -155,11 +155,13 @@ class _AuthPageState extends State<AuthPage> {
                       );
                       await userCredential.user
                           ?.updateDisplayName(_nameController.text);
+                      // Navigate back to the login UI after successful sign-up
+                      // This is where you might want to show a message or prompt the user to sign in
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
                             builder: (context) =>
-                                HomeScreen(user: userCredential.user)),
+                                AuthPage()), // Navigate back to the login UI
                       );
                     }
                   } on FirebaseAuthException catch (e) {

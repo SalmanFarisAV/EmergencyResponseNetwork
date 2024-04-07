@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
+import 'package:flutter/painting.dart';
 
 class ProfilePage extends StatefulWidget {
   @override
@@ -12,12 +13,16 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   final _formKey = GlobalKey<FormState>();
-  final _picker = ImagePicker();
-  String? _imageUrl;
   String? _bloodGroup;
   String? _medicalConditions;
   String? _username;
   bool _isEditing = false;
+  String? _gender; // New state variable for gender
+  File? _profilePicture;
+  String? _profilePictureUrl;
+  final _phoneNumberController = TextEditingController();
+  String? _phoneNumber; // New state variable for phone number
+
 
   // Controllers for form fields
   final _medicalConditionsController = TextEditingController();
@@ -28,6 +33,11 @@ class _ProfilePageState extends State<ProfilePage> {
     _fetchUserProfile();
     _fetchUserName();
     _medicalConditionsController.text = _medicalConditions ?? '';
+    _phoneNumberController.addListener(() {
+      setState(() {
+        _phoneNumber = _phoneNumberController.text;
+      });
+    });
   }
 
   Future<void> _fetchUserName() async {
@@ -39,7 +49,7 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  Future<void> _fetchUserProfile() async {
+Future<void> _fetchUserProfile() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       final docSnapshot = await FirebaseFirestore.instance
@@ -50,9 +60,47 @@ class _ProfilePageState extends State<ProfilePage> {
         setState(() {
           _bloodGroup = docSnapshot.data()?['bloodGroup'];
           _medicalConditions = docSnapshot.data()?['medicalConditions'];
+          _gender =
+              docSnapshot.data()?['gender']; // Initialize gender from Firestore
+          _phoneNumber = docSnapshot
+              .data()?['phone']; // Initialize phone number from Firestore
           _medicalConditionsController.text = _medicalConditions ?? '';
         });
       }
+    }
+  }
+
+
+  Future<void> _selectProfilePicture() async {
+    final ImagePicker _picker = ImagePicker();
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+
+    if (image != null) {
+      setState(() {
+        _profilePicture = File(image.path);
+      });
+      _uploadProfilePicture();
+    }
+  }
+
+  Future<void> _uploadProfilePicture() async {
+    if (_profilePicture != null) {
+      final String fileName =
+          'profile_pictures/${FirebaseAuth.instance.currentUser!.uid}';
+      final Reference ref = FirebaseStorage.instance.ref().child(fileName);
+      final UploadTask uploadTask = ref.putFile(_profilePicture!);
+      final TaskSnapshot taskSnapshot = await uploadTask;
+      final String downloadUrl = await taskSnapshot.ref.getDownloadURL();
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(FirebaseAuth.instance.currentUser!.uid)
+          .update({'profilePictureUrl': downloadUrl});
+
+      // Update the state with the new image URL
+      setState(() {
+        _profilePictureUrl = downloadUrl;
+      });
     }
   }
 
@@ -68,6 +116,8 @@ class _ProfilePageState extends State<ProfilePage> {
           await docRef.update({
             'bloodGroup': _bloodGroup,
             'medicalConditions': _medicalConditionsController.text,
+            'gender': _gender, // Save the gender to Firestore
+            'phone': _phoneNumber, // Save the phone number to Firestore
           });
           final updatedDocSnapshot = await docRef.get();
           if (updatedDocSnapshot.exists) {
@@ -83,6 +133,8 @@ class _ProfilePageState extends State<ProfilePage> {
             'name': _username,
             'bloodGroup': _bloodGroup,
             'medicalConditions': _medicalConditionsController.text,
+            'gender': _gender, // Save the gender to Firestore
+            'phone': _phoneNumber, // Save the phone number to Firestore
           });
           setState(() {
             _medicalConditions = _medicalConditionsController.text;
@@ -93,56 +145,12 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  Future<void> _pickImage(BuildContext context) async {
-    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      print("Image selected: ${pickedFile.path}"); // Debug print statement
-      await _uploadImageToFirebase(pickedFile.path);
-      setState(() {
-        _imageUrl = pickedFile.path;
-      });
-      print("Image URL updated: $_imageUrl"); // Debug print statement
-      Navigator.of(context).pop(); // Dismiss the dialog
-    } else {
-      print("No image selected."); // Debug print statement
-    }
-  }
 
-  Future<void> _uploadImageToFirebase(String filePath) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      final ref = FirebaseStorage.instance.ref('profilePictures/${user.uid}');
-      try {
-        final task = ref.putFile(File(filePath));
-        final snapshot = await task.whenComplete(() {});
-        final url = await snapshot.ref.getDownloadURL();
-        // ignore: deprecated_member_use
-        await user.updateProfile(photoURL: url);
-        print("Image uploaded successfully."); // Debug print statement
-      } catch (e) {
-        print("Error uploading image: $e"); 
-      }
-    }
-  }
-
-  void _showProfilePictureDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Change Profile Picture'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ElevatedButton(
-                onPressed: () => _pickImage(context),
-                child: Text('Choose Image'),
-              ),
-            ],
-          ),
-        );
-      },
-    );
+  @override
+  void dispose() {
+    _medicalConditionsController.dispose();
+    _phoneNumberController.dispose();
+    super.dispose();
   }
 
   @override
@@ -181,19 +189,62 @@ class _ProfilePageState extends State<ProfilePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(height: 20),
-                  InkWell(
-                    onTap: () => _showProfilePictureDialog(context),
-                    child: CircleAvatar(
-                      radius: 50,
-                      backgroundImage: _imageUrl != null
-                          ? FileImage(File(_imageUrl!))
-                          : null,
-                      child: _imageUrl == null
-                          ? Icon(Icons.person, size: 50)
-                          : null,
+                  if (!_isEditing)
+                    FutureBuilder<DocumentSnapshot>(
+                      future: FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(FirebaseAuth.instance.currentUser!.uid)
+                          .get(),
+                      builder: (BuildContext context,
+                          AsyncSnapshot<DocumentSnapshot> snapshot) {
+                        if (snapshot.connectionState == ConnectionState.done) {
+                          final String? profilePictureUrl =
+                              _profilePictureUrl ??
+                                  (snapshot.data?.data() as Map<String,
+                                          dynamic>)?['profilePictureUrl']
+                                      as String?;
+                          return GestureDetector(
+                            onTap: () => _selectProfilePicture(),
+                            child: Container(
+                              width: 100, // Adjust the width as needed
+                              height: 100, // Adjust the height as needed
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors
+                                      .blueAccent, // Change the border color as needed
+                                  width: 2, // Adjust the border width as needed
+                                ),
+                              ),
+                              child: ClipOval(
+                                child: profilePictureUrl != null
+                                    ? Image.network(
+                                        profilePictureUrl,
+                                        width:
+                                            100, // Adjust the width as needed
+                                        height:
+                                            100, // Adjust the height as needed
+                                        fit: BoxFit
+                                            .cover, // Adjust the fit as needed
+                                      )
+                                    : Image.asset(
+                                        'images/profile.jpg', // Use the default profile picture
+                                        width:
+                                            100, // Adjust the width as needed
+                                        height:
+                                            100, // Adjust the height as needed
+                                        fit: BoxFit
+                                            .cover, // Adjust the fit as needed
+                                      ),
+                              ),
+                            ),
+                          );
+                        } else {
+                          return CircularProgressIndicator();
+                        }
+                      },
                     ),
-                  ),
-                  SizedBox(height: 20),
+
                   Text(
                     'Hello, ${_username ?? 'Guest'}!',
                     style: TextStyle(
@@ -231,6 +282,48 @@ class _ProfilePageState extends State<ProfilePage> {
                   if (_isEditing)
                     Card(
                       child: ListTile(
+                        title: Text('Gender'),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            Text('Male'),
+                            Radio<String>(
+                              value: 'Male',
+                              groupValue: _gender,
+                              onChanged: (String? value) {
+                                setState(() {
+                                  _gender = value;
+                                });
+                              },
+                            ),
+                            Text('Female'),
+                            Radio<String>(
+                              value: 'Female',
+                              groupValue: _gender,
+                              onChanged: (String? value) {
+                                setState(() {
+                                  _gender = value;
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  if (!_isEditing)
+                    Card(
+                      child: ListTile(
+                        title: Text('Gender'),
+                        trailing: Text(
+                          _gender ?? 'Not specified',
+                          style: TextStyle(fontSize: 15),
+                        ),
+                      ),
+                    ),
+                  SizedBox(height: 20),
+                  if (_isEditing)
+                    Card(
+                      child: ListTile(
                         title: Text('Blood Group'),
                         trailing: DropdownButton<String>(
                           value: _bloodGroup,
@@ -261,7 +354,10 @@ class _ProfilePageState extends State<ProfilePage> {
                     Card(
                       child: ListTile(
                         title: Text('Blood Group'),
-                        trailing: Text(_bloodGroup ?? 'Not specified'),
+                        trailing: Text(
+                          _bloodGroup ?? 'Not specified',
+                          style: TextStyle(fontSize: 15),
+                        ),
                       ),
                     ),
                   SizedBox(height: 20),
@@ -269,11 +365,11 @@ class _ProfilePageState extends State<ProfilePage> {
                     Card(
                       child: ListTile(
                         trailing: Container(
-                          width: 360,
+                          width: 290, // Adjust the width as needed
                           child: TextFormField(
                             controller: _medicalConditionsController,
                             decoration: InputDecoration(
-                              hintText: 'Enter medical conditions',
+                              hintText: 'Any medical conditions?',
                             ),
                           ),
                         ),
@@ -283,10 +379,46 @@ class _ProfilePageState extends State<ProfilePage> {
                     Card(
                       child: ListTile(
                         title: Text('Medical Conditions'),
-                        trailing: Text(_medicalConditions ?? 'Not specified'),
+                        trailing: Text(
+                          _medicalConditions ?? 'Not specified',
+                          style: TextStyle(fontSize: 15),
+                        ),
                       ),
                     ),
                   SizedBox(height: 20),
+                  if (_isEditing)
+                    Card(
+                      child: ListTile(
+                        title: Text('Phone :'),
+                        trailing: Container(
+                          width: 230, // Adjust the width as needed
+                          child: TextFormField(
+                            controller: _phoneNumberController,
+                            keyboardType: TextInputType.phone,
+                            decoration: InputDecoration(
+                              hintText: 'Enter your phone number',
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your phone number';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (!_isEditing)
+                    Card(
+                      child: ListTile(
+                        title: Text('Phone Number'),
+                        trailing: Text(
+                          _phoneNumber ?? 'Not specified',
+                          style: TextStyle(fontSize: 15),
+                        ),
+                      ),
+                    ),
+
                 ],
               ),
             ),

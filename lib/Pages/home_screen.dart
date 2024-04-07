@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:newapp/Pages/FindUser.dart';
@@ -29,6 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _initializeUserProfile();
     _checkLocationPermission();
   }
 
@@ -91,9 +93,32 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 /////////
 
+
+Future<void> _initializeUserProfile() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final docRef =
+          FirebaseFirestore.instance.collection('users').doc(user.uid);
+      final docSnapshot = await docRef.get();
+
+      if (!docSnapshot.exists) {
+        // If the document does not exist, create a new one with default values
+        await docRef.set({
+          'name': user.displayName ?? 'username',
+          'bloodGroup': null,
+          'medicalConditions': null,
+          'gender': null,
+          'phone': null,
+          'profilePictureUrl': 'https://i.ibb.co/R7NQ88g/profile.jpg',
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    print("HomeScreen build: ${widget.user?.displayName ?? 'No user'}");
+    final user = FirebaseAuth.instance.currentUser;
+    print("HomeScreen build: ${user?.displayName ?? 'No user'}");
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -211,6 +236,18 @@ class AppDrawer extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => ProfilePage()),
+              );
+            },
+          ),
+          /////
+          ListTile(
+            title: const Text('Logout'),
+            onTap: () async {
+              await FirebaseAuth.instance.signOut();
+              Navigator.pop(context);
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => AuthPage()),
               );
             },
           ),

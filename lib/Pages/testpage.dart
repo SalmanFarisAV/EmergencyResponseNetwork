@@ -1,61 +1,55 @@
-import 'package:audioplayers/audioplayers.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_swipe_button/flutter_swipe_button.dart';
 
-class TestPage extends StatelessWidget {
-  AudioPlayer audioPlayer = AudioPlayer();
-  final player = AudioPlayer();
+class TestPage extends StatefulWidget {
+  @override
+  _TestPageState createState() => _TestPageState();
+}
+
+class _TestPageState extends State<TestPage> {
+  String _displayName = 'Loading...';
+
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   _getUser();
+  // }
+
+  // void _getUser() async {
+  //   final user = FirebaseAuth.instance.currentUser;
+  //   if (user != null) {
+  //     setState(() {
+  //       _displayName = ;
+  //     });
+  //   } else {
+  //     setState(() {
+  //       _displayName = 'No user logged in';
+  //     });
+  //   }
+  // }
+
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(
-          title: Text('AudioPlayer Example'),
+          title: Text('Hello World App'),
         ),
-        body: Builder(builder: (BuildContext context) {
-          return Center(
-            child: Container(
-              width: 180, // Specify the desired width here
-              child: SwipeButton.expand(
-                thumb: Icon(
-                  Icons.double_arrow_rounded,
-                  color: Colors.white,
-                ),
-                child: Text(
-                  "Cancel...",
-                  style:
-                      TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-                ),
-                activeThumbColor: Colors.red,
-                activeTrackColor: Colors.grey.shade300,
-                onSwipe: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text("Swipped"),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                },
+        body: Column(
+          children: [
+            Center(
+              child: Text(
+                user?.displayName ?? 'No display name',
+                style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
               ),
+              
             ),
-          );
-        }),
+            
+          ],
+        ),
+        
       ),
     );
   }
-
-  Future<void> playSound() async {
-    String audioPath = "audio/emergency.mp3";
-    await player.play(AssetSource(audioPath));
-  }
 }
-
-
-
-// ElevatedButton(
-//             onPressed: () {
-//               playSound();
-//             },
-//             child: Text("Play Sound"),
-//           ),
-          
