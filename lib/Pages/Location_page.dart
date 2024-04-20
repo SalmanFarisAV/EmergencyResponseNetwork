@@ -30,6 +30,7 @@ class _LocationStreamWidgetState extends State<LocationStreamWidget> {
   double _distance = 0.0;
   double _speed = 0.0;
   Position? _previousPosition;
+  bool _travelling = false;
 
   @override
   void initState() {
@@ -65,6 +66,7 @@ class _LocationStreamWidgetState extends State<LocationStreamWidget> {
           setState(() {
             _distance += newDistance;
             _speed = newSpeed;
+            _travelling = _speed > 5;
           });
         }
         _previousPosition = position;
@@ -100,7 +102,7 @@ class _LocationStreamWidgetState extends State<LocationStreamWidget> {
           style: TextStyle(fontSize: 20, color: Colors.blue[900]),
         ),
         const SizedBox(height: 20),
-        if (_speed > 5)
+        if (_travelling)
           const Text(
             'YOU ARE TRAVELING',
             style: TextStyle(fontSize: 25, color: Colors.green),

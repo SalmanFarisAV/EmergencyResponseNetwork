@@ -51,30 +51,6 @@ class _AuthPageState extends State<AuthPage> {
     });
   }
 
-  // Future<void> _handleGoogleSignIn() async {
-  //   try {
-  //     final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-  //     if (googleUser == null) {
-  //       print("Google sign-in failed: No user selected.");
-  //       return;
-  //     }
-  //     final GoogleSignInAuthentication googleAuth =
-  //         await googleUser.authentication;
-  //     final credential = GoogleAuthProvider.credential(
-  //       accessToken: googleAuth.accessToken,
-  //       idToken: googleAuth.idToken,
-  //     );
-  //     final userCredential = await _auth.signInWithCredential(credential);
-  //     print("Google sign-in successful: ${userCredential.user?.displayName}");
-  //     Navigator.pushReplacement(
-  //       context,
-  //       MaterialPageRoute(
-  //           builder: (context) => HomeScreen(user: userCredential.user)),
-  //     );
-  //   } catch (error) {
-  //     print("Google sign-in error: $error");
-  //   }
-  // }
 
   @override
   Widget build(BuildContext context) {
@@ -203,15 +179,7 @@ class _AuthPageState extends State<AuthPage> {
                 },
                 child: Text(_isLogin ? 'Sign Up' : 'Login'),
               ),
-              // SizedBox(height: 20),
-              // IconButton(
-              //   icon: Image.asset(
-              //     'images/google_logo.png',
-              //     width: 45,
-              //     height: 45,
-              //   ),
-              //   onPressed: _handleGoogleSignIn,
-              // ),
+              
             ],
           ),
         ),

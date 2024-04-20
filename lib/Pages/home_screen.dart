@@ -6,9 +6,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:newapp/Pages/FindUser.dart';
 import 'package:newapp/Pages/Location_page.dart';
 import 'package:newapp/Pages/ProfilePage.dart';
+import 'package:newapp/Pages/admin.dart';
 import 'package:newapp/Pages/auth_page.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:newapp/Pages/motion_sensor.dart';
+import 'package:newapp/Pages/register.dart';
 import 'package:newapp/Pages/testpage.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -33,6 +35,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _initializeUserProfile();
     _checkLocationPermission();
   }
+
 
 //Location accessing and Updating to Firebase
   void _checkLocationPermission() async {
@@ -75,12 +78,16 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _updateCoordinatesToFirebase(Position position) {
-    // ignore: deprecated_member_use
-    final DatabaseReference databaseReference =
-        // ignore: deprecated_member_use
-        FirebaseDatabase.instance.reference();
+  void _updateCoordinatesToFirebase(Position position) async {
+    // Fetch the responder value from Firestore
     final String userId = FirebaseAuth.instance.currentUser?.uid ?? 'unknown';
+    final DocumentSnapshot userDoc =
+        await FirebaseFirestore.instance.collection('users').doc(userId).get();
+    final bool responder = userDoc.get('responder') ?? false;
+
+    // Update the location in Firebase Realtime Database
+    final DatabaseReference databaseReference =
+        FirebaseDatabase.instance.reference();
     final String path = 'users/$userId/location';
     final String userName =
         FirebaseAuth.instance.currentUser?.displayName ?? 'Unknown';
@@ -89,12 +96,14 @@ class _HomeScreenState extends State<HomeScreen> {
       'latitude': position.latitude,
       'longitude': position.longitude,
       'timestamp': position.timestamp.millisecondsSinceEpoch,
+      'responder': responder, // Include the responder value
     });
   }
+
 /////////
 
-
-Future<void> _initializeUserProfile() async {
+//initializing user profile to firestore
+  Future<void> _initializeUserProfile() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       final docRef =
@@ -110,10 +119,16 @@ Future<void> _initializeUserProfile() async {
           'gender': null,
           'phone': null,
           'profilePictureUrl': 'https://i.ibb.co/R7NQ88g/profile.jpg',
+          'pending': false,
+          'responder': false,
+          'document': null,
+          'visible': false,
+          'powerSaver': false,
         });
       }
     }
   }
+///////
 
   @override
   Widget build(BuildContext context) {
@@ -169,6 +184,8 @@ class AppDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final User? user = FirebaseAuth.instance.currentUser;
+    final String userEmail = user?.email ?? '';
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
@@ -185,6 +202,7 @@ class AppDrawer extends StatelessWidget {
               ),
             ),
           ),
+          if (userEmail == 'salu9651@gmail.com')
           ListTile(
             title: const Text('Location Demo'),
             onTap: () {
@@ -218,6 +236,7 @@ class AppDrawer extends StatelessWidget {
             },
           ),
           // Add more ListTile widgets for additional items
+          if (userEmail == 'salu9651@gmail.com')
           ListTile(
             title: const Text('Test'),
             onTap: () {
@@ -225,6 +244,17 @@ class AppDrawer extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => TestPage()),
+              );
+            },
+          ),
+          /////
+          ListTile(
+            title: const Text('Register'),
+            onTap: () {
+              Navigator.pop(context); // Close the drawer
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => Register()),
               );
             },
           ),
@@ -240,8 +270,23 @@ class AppDrawer extends StatelessWidget {
             },
           ),
           /////
+          if (userEmail == 'salu9651@gmail.com')
+            ListTile(
+              title: const Text('Admin'),
+              onTap: () {
+                Navigator.pop(context); // Close the drawer
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => AdminPage()),
+                );
+              },
+            ),
+          //////
           ListTile(
-            title: const Text('Logout'),
+            title: const Text(
+              'Logout',
+              style: TextStyle(color: Color.fromARGB(255, 199, 13, 0)),
+            ),
             onTap: () async {
               await FirebaseAuth.instance.signOut();
               Navigator.pop(context);
@@ -251,6 +296,7 @@ class AppDrawer extends StatelessWidget {
               );
             },
           ),
+          //////
         ],
       ),
     );

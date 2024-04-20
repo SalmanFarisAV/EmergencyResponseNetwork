@@ -5,10 +5,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:newapp/Pages/Location_page.dart';
 import 'package:newapp/Pages/auth_page.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:newapp/Pages/motion_sensor.dart';
-import 'package:permission_handler/permission_handler.dart';
+// import 'package:newapp/Pages/motion_sensor.dart';
+// import 'package:permission_handler/permission_handler.dart';
 import 'package:firebase_database/firebase_database.dart';
 import '../Functions/app_state.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 class FindUser extends StatefulWidget {
   const FindUser({Key? key}) : super(key: key);
@@ -26,6 +27,9 @@ class _FindUserState extends State<FindUser> {
   List<Map<String, dynamic>> _userLocations = [];
   bool buttonPressed = false;
   final appState = AppState();
+
+
+
 
   void _fetchUserLocations() async {
     setState(() {
@@ -61,7 +65,7 @@ class _FindUserState extends State<FindUser> {
             );
 
             // Check if the user is within 1km radius
-            if (distance <= 1000) {
+            if (distance <= 1000 && value['location']['responder'] == true) {
               userLocations.add({
                 'name': value['location']['name'],
                 'latitude': userLatitude,
@@ -99,10 +103,6 @@ class _FindUserState extends State<FindUser> {
               );
             },
           ),
-          // IconButton(
-          //   icon: Icon(Icons.search),
-          //   onPressed: _fetchUserLocations,
-          // ),
         ],
       ),
       body: Center(
@@ -155,3 +155,5 @@ class _FindUserState extends State<FindUser> {
     );
   }
 }
+
+
