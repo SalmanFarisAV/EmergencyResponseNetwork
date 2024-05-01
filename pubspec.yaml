@@ -59,6 +59,7 @@ dependencies:
 
   # firebase_messaging: ^14.8.1
   google_maps_flutter: ^2.6.1 # Check for the latest version
+  video_player: ^2.8.6
   
 
  
@@ -91,6 +92,7 @@ flutter:
     - assets/audio/
     # - assets/images/gmap.png
     - images/googlemap.webp
+    - video/splash_dark.mp4
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

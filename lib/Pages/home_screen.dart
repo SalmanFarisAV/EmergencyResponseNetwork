@@ -39,10 +39,10 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _initializeUserProfile();
+    // requestLocationPermission();
     _checkLocationPermission();
     _listenToAlert();
   }
-
 
   void _listenToAlert() {
     final user = FirebaseAuth.instance.currentUser;
@@ -197,8 +197,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
   //////////////
 
-
 //Location accessing and Updating to Firebase
+
+  // Future<void> requestLocationPermission() async {
+  //   var status = await Permission.location.status;
+  //   if (!status.isGranted) {
+  //     status = await Permission.location.request();
+  //   }
+  //   if (status.isGranted) {
+  //     // Permission granted, proceed with location access
+  //     _getCurrentLocation();
+  //   } else {
+  //     // Permission denied, handle accordingly
+  //     print('Location permission denied or restricted');
+  //   }
+  // }
+
   void _checkLocationPermission() async {
     PermissionStatus permissionStatus = await Permission.location.request();
     if (permissionStatus == PermissionStatus.granted) {
@@ -270,8 +284,7 @@ class _HomeScreenState extends State<HomeScreen> {
       'latitude': position.latitude,
       'longitude': position.longitude,
     });
-}
-
+  }
 
 /////////
 
@@ -302,7 +315,6 @@ class _HomeScreenState extends State<HomeScreen> {
           'longitude': null,
         });
       }
-     
     }
   }
 ///////
@@ -380,29 +392,29 @@ class AppDrawer extends StatelessWidget {
             ),
           ),
           if (userEmail == 'salu9651@gmail.com')
-          ListTile(
-            title: const Text('Location Demo'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const LocationPage()),
-              );
-              // Close the drawer
-            },
-          ),
+            ListTile(
+              title: const Text('Location Demo'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LocationPage()),
+                );
+                // Close the drawer
+              },
+            ),
           if (userEmail == 'salu9651@gmail.com')
-          ListTile(
-            title: const Text('Find User'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const FindUser()),
-              );
-              // Close the drawer
-            },
-          ),
+            ListTile(
+              title: const Text('Find User'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const FindUser()),
+                );
+                // Close the drawer
+              },
+            ),
           ListTile(
             title: const Text('Motion Sensor Demo'),
             onTap: () {
@@ -415,16 +427,16 @@ class AppDrawer extends StatelessWidget {
           ),
           // Add more ListTile widgets for additional items
           if (userEmail == 'salu9651@gmail.com')
-          ListTile(
-            title: const Text('Test'),
-            onTap: () {
-              Navigator.pop(context); // Close the drawer
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => TestPage()),
-              );
-            },
-          ),
+            ListTile(
+              title: const Text('Test'),
+              onTap: () {
+                Navigator.pop(context); // Close the drawer
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => TestPage()),
+                );
+              },
+            ),
           /////
           ListTile(
             title: const Text('Register'),
