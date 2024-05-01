@@ -26,14 +26,18 @@ class _AdminPageState extends State<AdminPage> {
     FirebaseFirestore.instance.collection('users').doc(userId).update({
       'responder': value,
       'pending': !value,
+      
     });
 
-    // Update the responder value in Firebase Realtime Database
+    
     final DatabaseReference databaseReference =
         FirebaseDatabase.instance.reference();
-    final String path = 'users/$userId/location/responder';
-    databaseReference.child(path).set(value);
+    final String path = 'users/$userId/location';
+    databaseReference.child(path).update({
+      'responder': value,
+    });
   }
+
 
   @override
   Widget build(BuildContext context) {

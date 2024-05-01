@@ -1,15 +1,12 @@
 import 'dart:async';
-
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:newapp/Pages/Location_page.dart';
 import 'package:newapp/Pages/auth_page.dart';
 import 'package:geolocator/geolocator.dart';
-// import 'package:newapp/Pages/motion_sensor.dart';
-// import 'package:permission_handler/permission_handler.dart';
 import 'package:firebase_database/firebase_database.dart';
 import '../Functions/app_state.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 
 class FindUser extends StatefulWidget {
   const FindUser({Key? key}) : super(key: key);
@@ -23,22 +20,16 @@ class _FindUserState extends State<FindUser> {
 
   double _distance = 0.0;
   double _speed = 0.0;
-  // Position? _previousPosition;
   List<Map<String, dynamic>> _userLocations = [];
   bool buttonPressed = false;
   final appState = AppState();
 
-
-
-
   void _fetchUserLocations() async {
     setState(() {
-      buttonPressed =
-          true; // Set the variable to true when the method is called
+      buttonPressed = true;
     });
 
     final DatabaseReference databaseReference =
-        // ignore: deprecated_member_use
         FirebaseDatabase.instance.reference();
     final String path = 'users';
     databaseReference.child(path).once().then((DatabaseEvent event) {
@@ -49,14 +40,12 @@ class _FindUserState extends State<FindUser> {
 
         double currentLatitude = appState.previousPosition?.latitude ?? 0.0;
         double currentLongitude = appState.previousPosition?.longitude ?? 0.0;
-        print(appState.previousPosition);
 
         values.forEach((key, value) {
           if (key != FirebaseAuth.instance.currentUser?.uid) {
             double userLatitude = value['location']['latitude'];
             double userLongitude = value['location']['longitude'];
 
-            // Calculate the distance between the current user and the other user
             double distance = Geolocator.distanceBetween(
               currentLatitude,
               currentLongitude,
@@ -64,13 +53,29 @@ class _FindUserState extends State<FindUser> {
               userLongitude,
             );
 
-            // Check if the user is within 1km radius
-            if (distance <= 1000 && value['location']['responder'] == true) {
+            if (distance <= 5000 && value['location']['responder'] == true) {
+              // Add the UID to the map
               userLocations.add({
+                'uid': value['location']['uid'],
                 'name': value['location']['name'],
                 'latitude': userLatitude,
                 'longitude': userLongitude,
               });
+
+              // Update the alert value in Firestore for each responder found
+              final String responderPath =
+                  'users/${value['location']['uid']}/alert';
+              FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(value['location']['uid'])
+                  .update({
+                'alert': FirebaseAuth.instance.currentUser?.uid,
+              });
+              final String responderPath1 =
+                  'users/${value['location']['uid']}/location/alert';
+              databaseReference
+                  .child(responderPath1)
+                  .set(FirebaseAuth.instance.currentUser?.uid);
             }
           }
         });
@@ -82,6 +87,8 @@ class _FindUserState extends State<FindUser> {
       }
     });
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -122,14 +129,14 @@ class _FindUserState extends State<FindUser> {
               child: Text('Fetch User Locations'),
             ),
             SizedBox(height: 20),
-            if (buttonPressed) // Check if the button has been pressed
+            if (buttonPressed)
               _userLocations.isEmpty
                   ? Text(
-                      'No users found within 1km radius.',
+                      'No users found within 5km radius.',
                       style: TextStyle(fontSize: 20),
                     )
                   : Text(
-                      'User Found !',
+                      'User Found!',
                       style: TextStyle(
                         fontSize: 30,
                       ),
@@ -144,7 +151,7 @@ class _FindUserState extends State<FindUser> {
                       style: TextStyle(fontSize: 35),
                     ),
                     subtitle: Text(
-                        'Latitude: ${_userLocations[index]['latitude']}, Longitude: ${_userLocations[index]['longitude']}'),
+                        'UID: ${_userLocations[index]['uid']}, Latitude: ${_userLocations[index]['latitude']}, Longitude: ${_userLocations[index]['longitude']}'),
                   );
                 },
               ),
@@ -155,5 +162,3 @@ class _FindUserState extends State<FindUser> {
     );
   }
 }
-
-

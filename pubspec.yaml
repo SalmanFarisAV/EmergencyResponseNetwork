@@ -56,7 +56,9 @@ dependencies:
   url_launcher: ^6.0.12
   flutter_downloader: ^1.11.6
   path_provider: ^2.1.2
-  firebase_messaging: ^14.8.1
+
+  # firebase_messaging: ^14.8.1
+  google_maps_flutter: ^2.6.1 # Check for the latest version
   
 
  

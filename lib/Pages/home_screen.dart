@@ -84,7 +84,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final DocumentSnapshot userDoc =
         await FirebaseFirestore.instance.collection('users').doc(userId).get();
     final bool responder = userDoc.get('responder') ?? false;
-
+    final String alert = userDoc.get('alert') ?? '0';
     // Update the location in Firebase Realtime Database
     final DatabaseReference databaseReference =
         FirebaseDatabase.instance.reference();
@@ -92,11 +92,13 @@ class _HomeScreenState extends State<HomeScreen> {
     final String userName =
         FirebaseAuth.instance.currentUser?.displayName ?? 'Unknown';
     databaseReference.child(path).set({
+      'uid': userId,
       'name': userName,
       'latitude': position.latitude,
       'longitude': position.longitude,
       'timestamp': position.timestamp.millisecondsSinceEpoch,
       'responder': responder, // Include the responder value
+      'alert': alert,
     });
   }
 
@@ -124,8 +126,10 @@ class _HomeScreenState extends State<HomeScreen> {
           'document': null,
           'visible': false,
           'powerSaver': false,
+          'alert': null,
         });
       }
+     
     }
   }
 ///////
@@ -236,7 +240,7 @@ class AppDrawer extends StatelessWidget {
             },
           ),
           // Add more ListTile widgets for additional items
-          if (userEmail == 'salu9651@gmail.com')
+          // if (userEmail == 'salu9651@gmail.com')
           ListTile(
             title: const Text('Test'),
             onTap: () {

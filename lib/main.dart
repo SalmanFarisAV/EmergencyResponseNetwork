@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:newapp/Pages/auth_page.dart';
 // import 'package:newapp/login_screen.dart';
 // import 'package:newapp/signup_screen.dart';
