@@ -391,6 +391,7 @@ class AppDrawer extends StatelessWidget {
               // Close the drawer
             },
           ),
+          if (userEmail == 'salu9651@gmail.com')
           ListTile(
             title: const Text('Find User'),
             onTap: () {

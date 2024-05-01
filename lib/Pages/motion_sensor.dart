@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_swipe_button/flutter_swipe_button.dart';
 import 'package:geolocator/geolocator.dart';
@@ -33,6 +34,8 @@ class _SensorValuesAppState extends State<SensorValuesApp> {
   Position? _previousPosition;
   bool _powerSaver = false;
   bool _travelling = false;
+  List<Map<String, dynamic>> _userLocations = [];
+  bool buttonPressed = false;
 
   @override
   void initState() {
@@ -45,6 +48,7 @@ class _SensorValuesAppState extends State<SensorValuesApp> {
   }
 
   ///////
+
   ///
   Future<void> _fetchPowerSaver() async {
     final user = FirebaseAuth.instance.currentUser;
@@ -132,33 +136,33 @@ class _SensorValuesAppState extends State<SensorValuesApp> {
 
     if (shouldSubscribe) {
       // Subscribe to gyroscope events
-    // ignore: deprecated_member_use
-    _gyroscopeSubscription = gyroscopeEvents.listen((GyroscopeEvent event) {
-      setState(() {
-        _gyroscopeValues = [event.x, event.y, event.z];
+      // ignore: deprecated_member_use
+      _gyroscopeSubscription = gyroscopeEvents.listen((GyroscopeEvent event) {
+        setState(() {
+          _gyroscopeValues = [event.x, event.y, event.z];
           updateMaxValues([event.x, event.y, event.z], _maxGyroscopeValues);
           if (_gyroscopeValues.any((value) => value.abs() > 10)) {
-          _showAccidentDialog();
+            _showAccidentDialog();
           }
+        });
+      }, onError: (error) {
+        print("Gyroscope Error: $error");
       });
-    }, onError: (error) {
-      print("Gyroscope Error: $error");
-    });
 
       // Subscribe to accelerometer events
       _accelerometerSubscription =
-        // ignore: deprecated_member_use
-        userAccelerometerEvents.listen((UserAccelerometerEvent event) {
-      setState(() {
-        _accelerometerValues = [event.x, event.y, event.z];
+          // ignore: deprecated_member_use
+          userAccelerometerEvents.listen((UserAccelerometerEvent event) {
+        setState(() {
+          _accelerometerValues = [event.x, event.y, event.z];
           updateMaxValues([event.x, event.y, event.z], _maxAccelerometerValues);
           if (_accelerometerValues.any((value) => value.abs() > 10)) {
-          _showAccidentDialog();
-        }
+            _showAccidentDialog();
+          }
+        });
+      }, onError: (error) {
+        print("Accelerometer Error: $error");
       });
-    }, onError: (error) {
-      print("Accelerometer Error: $error");
-    });
     }
   }
 
@@ -167,6 +171,73 @@ class _SensorValuesAppState extends State<SensorValuesApp> {
       _distance = 0.0;
     });
   }
+
+  ////////
+  void _fetchUserLocations() async {
+    setState(() {
+      buttonPressed = true;
+    });
+
+    final DatabaseReference databaseReference =
+        FirebaseDatabase.instance.reference();
+    final String path = 'users';
+    databaseReference.child(path).once().then((DatabaseEvent event) {
+      DataSnapshot snapshot = event.snapshot;
+      Map<dynamic, dynamic>? values = snapshot.value as Map<dynamic, dynamic>?;
+      if (values != null) {
+        List<Map<String, dynamic>> userLocations = [];
+
+        double currentLatitude = _previousPosition?.latitude ?? 0.0;
+        double currentLongitude = _previousPosition?.longitude ?? 0.0;
+
+        values.forEach((key, value) {
+          if (key != FirebaseAuth.instance.currentUser?.uid) {
+            double userLatitude = value['location']['latitude'];
+            double userLongitude = value['location']['longitude'];
+
+            double distance = Geolocator.distanceBetween(
+              currentLatitude,
+              currentLongitude,
+              userLatitude,
+              userLongitude,
+            );
+
+            if (distance <= 5000 && value['location']['responder'] == true) {
+              // Add the UID to the map
+              userLocations.add({
+                'uid': value['location']['uid'],
+                'name': value['location']['name'],
+                'latitude': userLatitude,
+                'longitude': userLongitude,
+              });
+
+              // Update the alert value in Firestore for each responder found
+              final String responderPath =
+                  'users/${value['location']['uid']}/alert';
+              FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(value['location']['uid'])
+                  .update({
+                'alert': FirebaseAuth.instance.currentUser?.uid,
+              });
+              final String responderPath1 =
+                  'users/${value['location']['uid']}/location/alert';
+              databaseReference
+                  .child(responderPath1)
+                  .set(FirebaseAuth.instance.currentUser?.uid);
+            }
+          }
+        });
+        setState(() {
+          _userLocations = userLocations;
+        });
+      } else {
+        print("No data found at the specified path.");
+      }
+    });
+  }
+
+  ///////
 
   void _showAccidentDialog() {
     if (!_dialogShown) {
@@ -262,6 +333,7 @@ class _SensorValuesAppState extends State<SensorValuesApp> {
   }
 
   void _showSignalSentDialog() {
+    _fetchUserLocations();
     showDialog(
       context: context,
       barrierDismissible:
